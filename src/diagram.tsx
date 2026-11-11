@@ -57,7 +57,11 @@ function figure(shape:Shape) {
     case 'rectangle':return <rect x={x} y={y} width={width} height={height}/>
     case 'square':return <rect x={x} y={y} width={width} height={width}/>
     case 'circle':return <circle cx={x} cy={y} r={width/2}/>
-    case 'arc':return <path d={`M${x},${y}Q${x+width/2},${y-height*2} ${x+width},${y}`}/>
+    case 'arc':{
+      const radius=width*width/(8*height)+height/2
+      const large=height>width/2?1:0
+      return <path d={`M${x},${y}A${radius},${radius} 0 ${large} 1 ${x+width},${y}`}/>
+    }
     case 'axes':return <><path d={`M${x-width/2},${y}h${width} M${x},${y+height/2}v${-height} ${arrow(x+width/2,y,0)} ${arrow(x,y-height/2,-Math.PI/2)}`}/>{Array.from({length:19},(_,i)=>i-9).filter(Boolean).map(i=><path key={i} d={`M${x+i*width/20},${y-3}v6 M${x-3},${y+i*height/20}h6`}/>)}</>
     case 'graph':{try{return <path d={graphPath(shape)}/>}catch{return null}}
   }

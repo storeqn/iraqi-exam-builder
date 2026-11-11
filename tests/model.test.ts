@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { backupSchema, copyExam, defaultSettings, dimensions, examSchema, fromTemplate, move, newExam, newQuestion, partNumber, questionNumber, sumMarks } from '../src/model'
-import { graphPath } from '../src/diagram'
+import { diagramSvg, graphPath } from '../src/diagram'
 
 test('Iraqi templates stay editable and copies have independent data', () => {
   const exam=fromTemplate('math',defaultSettings)
@@ -38,4 +38,9 @@ test('function plotting accepts arithmetic and rejects executable syntax', () =>
   assert.match(graphPath(shape),/^M.+L/)
   assert.throws(()=>graphPath({...shape,expression:'x=2'}))
   assert.throws(()=>graphPath({...shape,expression:'import(x)'}))
+})
+
+test('circular arcs use the radius derived from their chord and height', () => {
+  const shape={id:crypto.randomUUID(),kind:'arc' as const,x:100,y:130,w:100,h:50,label:'',measure:'',color:'#000000',weight:2,expression:''}
+  assert.match(diagramSvg([shape]),/M100,130A50,50 0 0 1 200,130/)
 })
