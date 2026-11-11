@@ -25,6 +25,12 @@ try {
   await page.goto(base)
   await page.getByRole('heading',{name:'ورقتك الامتحانية، بتنسيق يليق بصفّك.'}).waitFor()
   assert.equal(await page.locator('html').getAttribute('dir'),'rtl')
+  const designer=page.getByRole('navigation',{name:'التواصل مع ENG BAHAA'})
+  const whatsapp=designer.getByRole('link',{name:/واتساب/})
+  const instagram=designer.getByRole('link',{name:/إنستغرام/})
+  assert.equal(new URL(await whatsapp.getAttribute('href')).pathname,'/9647731378313')
+  assert.equal(await instagram.getAttribute('href'),'https://www.instagram.com/0bh4/')
+  assert.ok(await designer.evaluate(element=>element.getBoundingClientRect().bottom<=document.querySelector('.topbar').getBoundingClientRect().top+1))
   if(process.env.TEST_OUTPUT){await mkdir(process.env.TEST_OUTPUT,{recursive:true});await page.screenshot({path:process.env.TEST_OUTPUT+'/dashboard.png',fullPage:true})}
   await button('إنشاء ورقة امتحانية جديدة').click()
   await page.getByLabel('عنوان الورقة المطبوع').fill('امتحان الرياضيات')
@@ -175,6 +181,11 @@ try {
   assert.equal(await page.getByLabel('عنوان الورقة المطبوع').inputValue(),'امتحان الرياضيات')
 
   await page.setViewportSize({width:390,height:844})
+  assert.ok(await whatsapp.isVisible()&&await instagram.isVisible())
+  for(const link of [whatsapp,instagram]){
+    const bounds=await link.boundingBox()
+    assert.ok(bounds&&bounds.width>=44&&bounds.height>=44)
+  }
   await button('معاينة').click()
   await page.locator('.preview-toolbar').getByText('معاينة الورقة',{exact:false}).waitFor()
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))

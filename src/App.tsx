@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { Dashboard, type ExamAction } from './Dashboard'
 import { copyExam, defaultSettings, examName, examSchema, fromTemplate, newExam, settingsSchema, uid, type Backup, type BankEntry, type Exam } from './model'
 import { putBank, putExam, putProfile, putSettings, readAll, readJson, remove, restore } from './storage'
+import { DesignerBar } from './DesignerBar'
 import { Button, Footer, IconButton, Modal, PWAInstall, SplashScreen, brand, errorText, useInstall } from './ui'
 const Bank=lazy(()=>import('./Bank').then(module=>({default:module.Bank})))
 const ExamEditor=lazy(()=>import('./ExamEditor').then(module=>({default:module.ExamEditor})))
@@ -104,6 +105,7 @@ export default function App() {
       <span className="side-credit" dir="ltr">ENG BAHAA</span>
     </aside>
     <div className="workspace">
+      <DesignerBar/>
       <header className="topbar"><div className="top-context"><IconButton label={drawer?'إغلاق القائمة':'فتح القائمة'} className="mobile-menu" onClick={()=>setDrawer(!drawer)}>{drawer?<X size={22}/>:<Menu size={22}/>}</IconButton><span className="context-icon">{editing?<FileText size={18}/>:page?(()=>{const Icon=page[2];return <Icon size={18}/>})():<LayoutDashboard size={18}/>}</span><strong>{editing?'محرر الامتحان':page?.[1]??'أسئلتي'}</strong></div><div className="top-actions"><span className="local-chip"><ShieldCheck size={16}/> حفظ على جهازك</span>{!editing&&<Button kind="primary" disabled={!loaded||creating} onClick={create}><Plus size={17}/>ورقة جديدة</Button>}</div></header>
       <main id="main-content" tabIndex={-1} className={editing?'main editor-main':'main'}>
         {!loaded&&(loadError?<section className="panel" role="alert"><p>{loadError}</p><Button onClick={()=>void load()}>إعادة المحاولة</Button></section>:<p className="loading" role="status">جارٍ تحميل أوراقك…</p>)}

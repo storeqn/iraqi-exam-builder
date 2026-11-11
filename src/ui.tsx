@@ -1,8 +1,7 @@
 import { useEffect, useId, useRef, type ButtonHTMLAttributes, type ReactNode, type InputHTMLAttributes } from 'react'
-import { X, Upload, MessageCircle } from 'lucide-react'
+import { X, Upload } from 'lucide-react'
 
 export const brand = 'منشئ الأسئلة الامتحانية العراقي'
-export const contact = 'https://wa.me/9647731378313?text=' + encodeURIComponent('السلام عليكم، أرغب بالتواصل مع ENG BAHAA بخصوص تصميم موقع أو تطبيق خاص.')
 export const errorText = (error: unknown) => error instanceof Error && error.name === 'QuotaExceededError' ? 'مساحة التخزين ممتلئة. احتفظ بنسخة احتياطية وحرّر مساحة.' : error instanceof Error && error.name === 'ZodError' ? 'الملف أو الحقول لا تطابق صيغة التطبيق. تحقق من البيانات وحاول مجددًا.' : error instanceof Error ? error.message : 'تعذّر إكمال العملية.'
 export function Button({ className = '', kind = 'secondary', type = 'button', ...props }: ButtonHTMLAttributes<HTMLButtonElement> & {kind?: 'primary'|'secondary'|'ghost'|'danger'}) {
   return <button type={type} className={`button ${kind} ${className}`} {...props}/>
@@ -36,7 +35,6 @@ export function Modal({title, children, close, wide=false}: {title:string;childr
 export function Footer({compact=false}: {compact?:boolean}) {
   return <footer className={`site-footer ${compact?'compact':''}`}>
     <div className="footer-credit"><img src="/logo.svg" alt="" width="34" height="34"/><div><strong>إنشاء وتصميم <bdi>ENG BAHAA</bdi></strong><small>جميع حقوق التصميم محفوظة © <bdi>ENG BAHAA</bdi></small></div></div>
-    <div className="footer-contact"><small>للتواصل وطلب تصميم موقع أو تطبيق خاص · <bdi>07731378313</bdi></small><a className="button secondary" target="_blank" rel="noopener noreferrer" href={contact}><MessageCircle size={16}/>تواصل مع المصمم</a></div>
   </footer>
 }
 export function SplashScreen() {

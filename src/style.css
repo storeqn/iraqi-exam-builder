@@ -49,6 +49,17 @@ svg {flex-shrink:0}
 .side-install .button {width:100%;min-height:34px;font-size:12px}
 .side-credit {text-align:center;color:var(--muted);font-size:10px;letter-spacing:2.2px;font-weight:800;margin-top:-14px}
 .workspace {min-width:0}
+.designer-bar {display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:54px;padding:4px clamp(15px,3vw,42px);background:var(--surface-soft);border-bottom:1px solid var(--line)}
+.designer-name,.designer-links {display:flex;align-items:center;gap:8px}
+.designer-name {color:var(--muted);font-size:12px;white-space:nowrap}
+.designer-name strong {color:var(--ink);letter-spacing:.06em;font-size:13px}
+.designer-links {gap:5px}
+.designer-link {display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:44px;min-height:44px;padding:0 9px;border:1px solid var(--line);border-radius:9px;background:var(--surface)}
+.designer-link:hover {background:var(--blue-soft);border-color:currentColor}
+.designer-link.whatsapp {color:#176744}
+.designer-link.instagram {color:#a02456;font-size:12px;font-weight:700}
+:root[data-theme="dark"] .designer-link.whatsapp {color:#77dca6}
+:root[data-theme="dark"] .designer-link.instagram {color:#ff9fc1}
 .topbar {height:73px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 clamp(15px,3vw,42px);background:var(--surface);border-bottom:1px solid var(--line)}
 .top-context,.top-actions {display:flex;align-items:center;gap:12px;min-width:0}
 .context-icon {display:grid;place-items:center;width:34px;height:34px;border-radius:8px;background:var(--blue-soft);color:var(--blue)}
@@ -130,11 +141,10 @@ svg {flex-shrink:0}
 .exam-card .section-line {margin-top:11px}
 .empty-inline {display:flex;gap:8px;align-items:center;color:var(--muted);background:var(--surface-soft);border:1px dashed var(--line);border-radius:8px;padding:13px;margin-top:12px}
 .site-footer {display:flex;justify-content:space-between;align-items:center;gap:14px;padding:17px 0 0;border-top:1px solid var(--line);margin-top:28px}
-.footer-credit,.footer-contact {display:flex;align-items:center;gap:9px}
+.footer-credit {display:flex;align-items:center;gap:9px}
 .footer-credit img {border-radius:9px}
 .site-footer small {display:block;color:var(--muted);font-size:11px}
 .site-footer strong {font-size:12px}
-.site-footer .button {min-height:34px;font-size:11px}
 .site-footer.compact {margin-top:12px}
 .panel {padding:17px}
 .panel h2 {display:flex;align-items:center;gap:8px;font-size:18px;margin-bottom:10px}
@@ -330,7 +340,7 @@ input[type="checkbox"] {width:17px;height:17px;accent-color:var(--blue);flex-shr
 }
 @media(max-width:500px) {
  .top-context,.top-actions {gap:4px}
- .topbar {padding-inline:10px}
+ .topbar,.designer-bar {padding-inline:10px}
  .topbar strong {font-size:13px}
  .topbar .local-chip {display:none}
  .main {padding-top:16px}
@@ -342,7 +352,6 @@ input[type="checkbox"] {width:17px;height:17px;accent-color:var(--blue);flex-shr
  .section-heading .button {font-size:11px;padding:6px 8px}
  .template-cards,.exam-cards {grid-template-columns:minmax(0,1fr)}
  .template-arrow {display:block}
- .footer-contact {flex-wrap:wrap}
  .bank-item {flex-wrap:wrap}
  .editor-top-actions .button {padding-inline:7px;font-size:12px}
  .editor-top-actions {width:100%;gap:4px}
@@ -357,7 +366,7 @@ input[type="checkbox"] {width:17px;height:17px;accent-color:var(--blue);flex-shr
 }
 @media print {
  html,body,#root,.app-shell,.workspace,.main,.editor-grid,.preview-column,.preview-panel {display:block!important;position:static!important;width:auto!important;height:auto!important;margin:0!important;padding:0!important;background:white!important;border:0!important;box-shadow:none!important;overflow:visible!important}
- .sidebar,.topbar,.skip-link,.editor-heading,.editor-panel,.mobile-editor-tabs,.preview-toolbar,.preview-viewport,.page-nav,.paper-measure,.toast,.splash,.drawer-overlay,.modal {display:none!important}
+ .sidebar,.designer-bar,.topbar,.skip-link,.editor-heading,.editor-panel,.mobile-editor-tabs,.preview-toolbar,.preview-viewport,.page-nav,.paper-measure,.toast,.splash,.drawer-overlay,.modal {display:none!important}
  .modal::backdrop {display:none}
  .print-root {position:static;z-index:auto}
  .print-root .paper-sheet {width:var(--print-width)!important;height:var(--print-height)!important;break-after:page;break-inside:avoid;box-shadow:none;margin:0!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
