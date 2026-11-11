@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowRight, BookOpen, Check, CircleAlert, Eye, FileDown, FilePlus2, PenLine, Plus, Printer, Save, Share2, SlidersHorizontal } from 'lucide-react'
+import { flushSync } from 'react-dom'
+import { ArrowDown, ArrowRight, BookOpen, Check, CircleAlert, Eye, FileDown, FilePlus2, PenLine, Plus, Printer, Save, Share2, SlidersHorizontal } from 'lucide-react'
 import { Bank, BankForm, newBank } from './Bank'
 import { ExamForm, PaperControls } from './ExamForm'
 import { ExportPanel } from './ExportPanel'
@@ -16,13 +17,14 @@ export function ExamEditor({initial,data,view,initialDialog,save,saveBank,savePr
   const [exam,setExam]=useState(initial)
   const [status,setStatus]=useState<'saved'|'saving'|'error'|'dirty'>('saved')
   const [tab,setTab]=useState(view?'preview':'edit')
-  const [section,setSection]=useState('info')
   const [dialog,setDialog]=useState<Dialog>(initialDialog)
   const [selected,setSelected]=useState<Question>()
   const [profileKind,setProfileKind]=useState<Profile['kind']>('school')
   const [profileName,setProfileName]=useState('')
   const [ready,setReady]=useState(false)
   const printRef=useRef<HTMLDivElement>(null)
+  const infoSection=useRef<HTMLElement>(null)
+  const questionSection=useRef<HTMLElement>(null)
   const latest=useRef(initial)
   const committed=useRef(initial)
   const queue=useRef<Promise<void>>(Promise.resolve())
@@ -72,8 +74,17 @@ export function ExamEditor({initial,data,view,initialDialog,save,saveBank,savePr
   }
   function updateQuestion(id:string,change:Partial<Question>|Question) {update(old=>({...old,questions:old.questions.map(question=>question.id===id?{...question,...change}:question)}))}
   function addQuestion() {
-    setSection('questions')
-    update(old=>({...old,questions:[...old.questions,newQuestion(old.info.subject.includes('رياض')?'رياضيات':'إجابة قصيرة')]}))
+    const question=newQuestion(latest.current.info.subject.includes('رياض')?'رياضيات':'إجابة قصيرة')
+    flushSync(()=>update(old=>({...old,questions:[...old.questions,question]})))
+    document.getElementById('question-text-'+question.id)?.focus()
+  }
+  function goToSection(section:HTMLElement|null) {
+    section?.focus({preventScroll:true})
+    section?.scrollIntoView({block:'start'})
+  }
+  function showPreview() {
+    setTab('preview')
+    window.scrollTo({top:0,behavior:'instant'})
   }
   function applyProfile(id:string) {
     const profile=data.profiles.find(item=>item.id===id)
@@ -92,35 +103,49 @@ export function ExamEditor({initial,data,view,initialDialog,save,saveBank,savePr
       <Button disabled={!ready} onClick={()=>setDialog('share')}><Share2 size={16}/>مشاركة</Button>
       <Button kind="primary" disabled={!ready} onClick={()=>setDialog('export')}><FileDown size={17}/>تصدير</Button>
     </div></div>
-    {!view&&<div className="mobile-editor-tabs" role="group" aria-label="عرض المحرر"><Button kind={tab==='edit'?'primary':'secondary'} onClick={()=>setTab('edit')}><PenLine size={16}/>تحرير</Button><Button kind={tab==='preview'?'primary':'secondary'} onClick={()=>setTab('preview')}><Eye size={16}/>معاينة</Button></div>}
+    {!view&&<div className="mobile-editor-tabs" role="group" aria-label="عرض المحرر"><Button kind={tab==='edit'?'primary':'secondary'} onClick={()=>setTab('edit')}><PenLine size={16}/>تحرير</Button><Button kind={tab==='preview'?'primary':'secondary'} onClick={showPreview}><Eye size={16}/>معاينة</Button></div>}
     <div className={`editor-grid mode-${tab} ${view?'read-only':''}`}>
       {!view&&<section className="editor-panel">
-        <div className="editor-sections" role="group" aria-label="أقسام التحرير">
-          {([[ 'info','بيانات الامتحان',FilePlus2],['questions','الأسئلة',BookOpen],['paper','تنسيق الورقة',SlidersHorizontal]] as const).map(([key,label,Icon])=><button key={key} className={section===key?'selected':''} aria-pressed={section===key} onClick={()=>setSection(key)}><Icon size={16}/>{label}</button>)}
+        <div className="editor-sections" role="group" aria-label="الانتقال بين أقسام التحرير">
+          <Button kind="ghost" onClick={()=>goToSection(infoSection.current)}><FilePlus2 size={17}/>بيانات الامتحان</Button>
+          <Button kind="ghost" onClick={()=>goToSection(questionSection.current)}><BookOpen size={17}/>الانتقال إلى الأسئلة<ArrowDown size={15}/></Button>
         </div>
         <div className="editor-body">
-          {section==='info'&&<>
-            <Field label="عنوان الورقة في لوحة التحكم" maxLength={350} placeholder="مثال: رياضيات السادس · نصف السنة" value={exam.title} onChange={event=>update(old=>({...old,title:event.target.value}))}/>
+          <section ref={infoSection} tabIndex={-1} aria-labelledby="exam-info-title" className="editor-block">
+            <h2 id="exam-info-title">بيانات ورقة الامتحان</h2>
             <ExamForm info={exam.info} change={info=>update(old=>({...old,info}))} notify={notify}/>
-            <div className="button-row">
-              {!!data.profiles.length&&<Select label="استخدام ملف محفوظ" value="" options={[[ '', 'اختر ملفًا'],...data.profiles.map(item=>[item.id,item.name] as const)]} change={applyProfile}/>}
-              <Button onClick={()=>{setProfileName(exam.info.school||exam.info.teacher);setDialog('profile')}}>حفظ بيانات المدرسة أو المدرس</Button>
-              <Button onClick={()=>void Promise.resolve().then(()=>save(examSchema.parse(copyExam(exam,true)))).then(()=>notify('تم حفظ القالب.')).catch(fail)}>حفظ كقالب</Button>
-              <Button onClick={()=>saveJson({version:1,exam},'مشروع-امتحان.json')}>تنزيل المشروع JSON</Button>
-            </div>
-          </>}
-          {section==='paper'&&<PaperControls paper={exam.paper} change={paper=>update(old=>({...old,paper}))}/>}
-          {section==='questions'&&<>
-            <div className="section-line marks-line"><strong>{exam.questions.length} سؤال</strong><span>مجموع الدرجات <bdi>{marks}</bdi>{exam.info.total!==null&&<> / <bdi>{exam.info.total}</bdi></>}</span></div>
+          </section>
+          <section ref={questionSection} tabIndex={-1} aria-labelledby="exam-questions-title" className="editor-block">
+            <div className="section-line"><h2 id="exam-questions-title">أسئلة الامتحان</h2><span className="marks-line">مجموع الدرجات <bdi>{marks}</bdi>{exam.info.total!==null&&<> / <bdi>{exam.info.total}</bdi></>}</span></div>
             {exam.info.total!==null&&marks!==exam.info.total&&<p className="warning" role="status"><CircleAlert size={17}/> مجموع درجات الأسئلة يختلف عن الدرجة الكلية.</p>}
-            <div className="button-row"><Button kind="primary" disabled={exam.questions.length>=250} onClick={addQuestion}><Plus size={18}/>إضافة سؤال</Button><Button onClick={()=>setDialog('bank')}><BookOpen size={17}/>إدراج من البنك</Button></div>
-            {!exam.questions.length&&<div className="empty-inline">أضف سؤالًا لبدء بناء ورقتك.</div>}
-            <div className="questions-stack">{exam.questions.map((question,index)=><QuestionEditor key={question.id} question={question} index={index} count={exam.questions.length} change={next=>updateQuestion(question.id,next)} notify={notify}
+            {!exam.questions.length&&<div className="question-start"><strong>أضف أول سؤال لبدء الكتابة</strong><p>سيظهر حقل نص السؤال وتجد تحته خيارات الدرجة والنوع.</p></div>}
+            <div className="questions-stack">{exam.questions.map((question,index)=><QuestionEditor key={question.id} inputId={'question-text-'+question.id} question={question} index={index} count={exam.questions.length} change={next=>updateQuestion(question.id,next)} notify={notify}
               reorder={(from,to)=>update(old=>({...old,questions:move(old.questions,from,to)}))}
               remove={()=>{if(confirm('حذف هذا السؤال من الورقة؟'))update(old=>({...old,questions:old.questions.filter(item=>item.id!==question.id)}))}}
               duplicate={exam.questions.length<250?()=>update(old=>({...old,questions:[...old.questions.slice(0,index+1),{...structuredClone(question),id:uid()},...old.questions.slice(index+1)]})):undefined}
               bank={()=>{setSelected(question);setDialog('bank-save')}}/>)}</div>
-          </>}
+            <div className="button-row question-add">
+              <Button kind="primary" disabled={exam.questions.length>=250} onClick={addQuestion}><Plus size={19}/>{exam.questions.length?'إضافة سؤال آخر':'إضافة أول سؤال'}</Button>
+              <Button onClick={()=>setDialog('bank')}><BookOpen size={17}/>إدراج من بنك الأسئلة</Button>
+            </div>
+            <Button className="questions-preview" onClick={showPreview}><Eye size={17}/>معاينة الورقة قبل الطباعة</Button>
+          </section>
+          <details className="editor-details editor-options">
+            <summary><SlidersHorizontal size={17}/> تنسيق الورقة</summary>
+            <div className="details-content"><PaperControls paper={exam.paper} change={paper=>update(old=>({...old,paper}))}/></div>
+          </details>
+          <details className="editor-details editor-options">
+            <summary>اسم الحفظ والقوالب</summary>
+            <div className="details-content">
+              <Field label="عنوان الورقة في لوحة التحكم" maxLength={350} placeholder="مثال: رياضيات السادس · نصف السنة" value={exam.title} onChange={event=>update(old=>({...old,title:event.target.value}))}/>
+              <div className="button-row">
+                {!!data.profiles.length&&<Select label="استخدام ملف محفوظ" value="" options={[[ '', 'اختر ملفًا'],...data.profiles.map(item=>[item.id,item.name] as const)]} change={applyProfile}/>}
+                <Button onClick={()=>{setProfileName(exam.info.school||exam.info.teacher);setDialog('profile')}}>حفظ بيانات المدرسة أو المدرس</Button>
+                <Button onClick={()=>void Promise.resolve().then(()=>save(examSchema.parse(copyExam(exam,true)))).then(()=>notify('تم حفظ القالب.')).catch(fail)}>حفظ كقالب</Button>
+                <Button onClick={()=>saveJson({version:1,exam},'مشروع-امتحان.json')}>تنزيل المشروع JSON</Button>
+              </div>
+            </div>
+          </details>
         </div>
       </section>}
       <div className="preview-column"><PaperPreview exam={exam} printRef={printRef} ready={readyCallback}/></div>

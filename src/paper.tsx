@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { ChevronLeft, ChevronRight, Maximize, Minus, Plus } from 'lucide-react'
 import { DiagramSvg } from './diagram'
-import { dimensions, kindName, partNumber, questionNumber, type Exam, type Question } from './model'
+import { dimensions, partNumber, printedExamTitle, questionNumber, type Exam, type Question } from './model'
 import { richHtml } from './rich'
 import { IconButton } from './ui'
 
@@ -17,10 +17,11 @@ export function Header({exam}: {exam:Exam}) {
   const school=<div>{info.logo&&<img src={info.logo} alt="شعار المدرسة"/>}{paper.ministry&&<>{info.country&&<div>{info.country}</div>}{info.ministry&&<div>{info.ministry}</div>}{info.directorate&&<div>{info.directorate}</div>}</>}{info.school&&<div>{info.school}</div>}</div>
   const details=<div>{([[ 'الصف',info.grade],['الشعبة',info.classroom],['المادة',info.subject],['التاريخ',info.date],['الزمن',info.duration],['الدرجة',info.total===null?'':String(info.total)]] as const).map(([label,value])=>value&&<div key={label}>{label} / <bdi>{value}</bdi></div>)}</div>
   const reversed=paper.headerOrder==='reversed'
-  if(!info.logo&&!info.school&&!(paper.ministry&&(info.country||info.ministry||info.directorate))&&!(info.invocation||info.heading||kindName(info)||info.year||info.round||info.grade||info.classroom||info.subject||info.date||info.duration||info.total!==null))return null
+  const title=printedExamTitle(info)
+  if(!info.logo&&!info.school&&!(paper.ministry&&(info.country||info.ministry||info.directorate))&&!(info.invocation||title||info.year||info.round||info.grade||info.classroom||info.subject||info.date||info.duration||info.total!==null))return null
   return <header className="sheet-header">
     {reversed?details:school}
-    <div className="sheet-center">{info.invocation&&<div>{info.invocation}</div>}{(info.heading||kindName(info))&&<strong>{[info.heading,kindName(info)].filter(Boolean).join(' ')}</strong>}{info.year&&<div>السنة الدراسية <bdi>{info.year}</bdi></div>}{info.round&&<div>{info.round}</div>}</div>
+    <div className="sheet-center">{info.invocation&&<div>{info.invocation}</div>}{title&&<strong>{title}</strong>}{info.year&&<div>السنة الدراسية <bdi>{info.year}</bdi></div>}{info.round&&<div>{info.round}</div>}</div>
     {reversed?school:details}
   </header>
 }

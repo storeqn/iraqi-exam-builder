@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { backupSchema, copyExam, defaultSettings, dimensions, examSchema, fromTemplate, move, newExam, newQuestion, partNumber, questionNumber, sumMarks } from '../src/model'
+import { backupSchema, copyExam, defaultSettings, dimensions, examName, examSchema, fromTemplate, move, newExam, newQuestion, partNumber, printedExamTitle, questionNumber, sumMarks } from '../src/model'
 import { diagramSvg, graphPath } from '../src/diagram'
 
 test('Iraqi templates stay editable and copies have independent data', () => {
@@ -43,4 +43,17 @@ test('function plotting accepts arithmetic and rejects executable syntax', () =>
 test('circular arcs use the radius derived from their chord and height', () => {
   const shape={id:crypto.randomUUID(),kind:'arc' as const,x:100,y:130,w:100,h:50,label:'',measure:'',color:'#000000',weight:2,expression:''}
   assert.match(diagramSvg([shape]),/M100,130A50,50 0 0 1 200,130/)
+})
+
+
+test('custom printed titles preserve the automatic title for older exams', () => {
+  const exam=newExam()
+  assert.equal(printedExamTitle(examSchema.parse(exam).info),'أسئلة امتحان شهري')
+  exam.info.printedTitle='  اختبار العلوم  '
+  const restored=examSchema.parse(exam)
+  assert.equal(printedExamTitle(restored.info),'اختبار العلوم')
+  assert.equal(examName(restored),'اختبار العلوم')
+  restored.title='مسودة العلوم'
+  assert.equal(examName(restored),'مسودة العلوم')
+  assert.equal(printedExamTitle(restored.info),'اختبار العلوم')
 })

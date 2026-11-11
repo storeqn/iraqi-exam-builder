@@ -30,7 +30,7 @@ export const infoSchema = z.object({
   customKind: small, date: z.string().regex(/^(|\d{4}-\d{2}-\d{2})$/), duration: small,
   total: z.number().min(0).max(10000).nullable(), round: small, logo: image.or(z.literal('')),
   instructions: z.string().max(4000), notes: z.string().max(4000),
-  administration: small, signature: small, closing: small, invocation: small, heading: small,
+  administration: small, signature: small, closing: small, invocation: small, heading: small, printedTitle: small.optional(),
 })
 export const paperSchema = z.object({
   orientation: z.enum(['portrait','landscape']), font: z.enum(['Amiri','Cairo']),
@@ -91,13 +91,15 @@ export function copyExam(exam: Exam, template = false): Exam {
   const now = new Date().toISOString()
   return { ...structuredClone(exam), id: uid(), title: (exam.template ? exam.title : `${examName(exam)} — ${template ? 'قالب' : 'نسخة'}`).slice(0,350), created: now, modified: now, template }
 }
-export const examName = (exam: Exam) => exam.title || [exam.info.subject, exam.info.grade].filter(Boolean).join(' · ') || 'ورقة امتحانية جديدة'
+export const examName = (exam: Exam) => exam.title || exam.info.printedTitle?.trim() || [exam.info.subject, exam.info.grade].filter(Boolean).join(' · ') || 'ورقة امتحانية جديدة'
 export const sumMarks = (exam: Exam) => Math.round(exam.questions.reduce((sum, question) => sum + question.marks, 0) * 1000) / 1000
 export const questionNumber = (index: number, style: Paper['numbering']) => style === 'arabic' ? `س${index + 1}` : `${index + 1}.`
 const letters = 'أبجدهوزحطيكلمنسعفصقرشتثخذضظغ'
 export const partNumber = (index: number, style: Paper['parts']) => style === 'letters' && index < letters.length ? letters[index] : String(index + 1)
 export const dimensions = (paper: Paper) => paper.orientation === 'portrait' ? { width: 794, height: 1123 } : { width: 1123, height: 794 }
 export const kindName = (info: Info) => info.kind === 'مخصص' ? info.customKind : info.kind
+export const defaultPrintTitle = (info: Info) => [info.heading,kindName(info)].filter(Boolean).join(' ')
+export const printedExamTitle = (info: Info) => info.printedTitle?.trim() || defaultPrintTitle(info)
 export const move = <T,>(items: T[], from: number, to: number) => {
   if (from < 0 || to < 0 || from >= items.length || to >= items.length || from === to) return items
   const result = [...items]

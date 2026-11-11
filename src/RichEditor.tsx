@@ -1,11 +1,12 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useId, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { Bold, Italic, Underline, List, ListOrdered, Table, Sigma } from 'lucide-react'
 import { Button, IconButton, Modal } from './ui'
 import { captureRich, equationMarkup, richHtml } from './rich'
 
 const MathEditor = lazy(()=>import('./MathEditor'))
-export function RichEditor({value, change, label}: {value:string;change:(value:string)=>void;label:string}) {
+export function RichEditor({value, change, label, placeholder, inputId}: {value:string;change:(value:string)=>void;label:string;placeholder?:string;inputId?:string}) {
+  const labelId=useId()
   const ref=useRef<HTMLDivElement>(null)
   const seen=useRef<string | undefined>(undefined)
   const selection=useRef<Range|null>(null)
@@ -57,16 +58,19 @@ export function RichEditor({value, change, label}: {value:string;change:(value:s
     } else if(value) command('insertHTML',equationMarkup(value)+'&nbsp;')
   }
   const tools=[[Bold,'bold','عريض'],[Italic,'italic','مائل'],[Underline,'underline','تسطير'],[List,'insertUnorderedList','قائمة نقطية'],[ListOrdered,'insertOrderedList','قائمة مرقمة']] as const
-  return <div className="rich">
-    <div className="rich-tools" aria-label="أدوات التنسيق" role="group">
-      {tools.map(([Icon, name, title])=><IconButton key={name} label={title} onMouseDown={event=>event.preventDefault()} onClick={()=>{remember();command(name)}}><Icon size={16}/></IconButton>)}
-      <IconButton label="إدراج جدول" onMouseDown={event=>event.preventDefault()} onClick={()=>{remember();setTable(true)}}><Table size={17}/></IconButton>
-      <Button kind="ghost" onMouseDown={event=>event.preventDefault()} onClick={()=>openEquation(null)}><Sigma size={17}/>معادلة</Button>
+  return <div className="rich-field">
+    <div id={labelId} className="rich-label" onClick={()=>ref.current?.focus()}>{label}</div>
+    <div className="rich">
+      <div ref={ref} id={inputId} className="editable" contentEditable suppressContentEditableWarning role="textbox" aria-labelledby={labelId} aria-multiline="true" dir="rtl" data-placeholder={placeholder??label} onInput={update}
+        onPaste={event=>{event.preventDefault();remember();command('insertText',event.clipboardData.getData('text/plain'))}}
+        onDrop={event=>event.preventDefault()}
+        onClick={event=>{const target=(event.target as HTMLElement).closest<HTMLElement>('span[data-equation]');if(target)openEquation(target)}}/>
+      <div className="rich-tools" aria-label="أدوات التنسيق" role="group">
+        {tools.map(([Icon, name, title])=><IconButton key={name} label={title} onMouseDown={event=>event.preventDefault()} onClick={()=>{remember();command(name)}}><Icon size={16}/></IconButton>)}
+        <IconButton label="إدراج جدول" onMouseDown={event=>event.preventDefault()} onClick={()=>{remember();setTable(true)}}><Table size={17}/></IconButton>
+        <Button kind="ghost" onMouseDown={event=>event.preventDefault()} onClick={()=>openEquation(null)}><Sigma size={17}/>معادلة</Button>
+      </div>
     </div>
-    <div ref={ref} className="editable" contentEditable suppressContentEditableWarning role="textbox" aria-label={label} aria-multiline="true" dir="rtl" data-placeholder={label} onInput={update}
-      onPaste={event=>{event.preventDefault();remember();command('insertText',event.clipboardData.getData('text/plain'))}}
-      onDrop={event=>event.preventDefault()}
-      onClick={event=>{const target=(event.target as HTMLElement).closest<HTMLElement>('span[data-equation]');if(target)openEquation(target)}}/>
     {latex!==null && <Modal title="محرر المعادلات" close={()=>setLatex(null)}><Suspense fallback={<p>جارٍ تحميل محرر المعادلات…</p>}><MathEditor initial={latex} existing={!!token.current} save={saveEquation}/></Suspense></Modal>}
     {table && <Modal title="إدراج جدول" close={()=>setTable(false)}>
       <div className="form-grid">
