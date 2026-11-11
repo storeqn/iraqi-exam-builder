@@ -89,12 +89,11 @@ async function wordHeader(header:HTMLElement):Promise<Table> {
   const cells:TableCell[]=[]
   for(const [i,column] of Array.from(header.children).entries()){
     const content:Paragraph[]=[]
-    const alignment=i===1?AlignmentType.CENTER:i===0?AlignmentType.RIGHT:AlignmentType.LEFT
     for(const node of column.children){
       const children=node instanceof HTMLImageElement?[await asPicture(node,65,65)]:await runs([node])
-      content.push(paragraph(children,alignment))
+      content.push(paragraph(children,AlignmentType.CENTER))
     }
-    cells.push(new TableCell({children:content.length?content:[paragraph([])],width:{size:i===1?36:32,type:WidthType.PERCENTAGE},borders:{top:noBorder,bottom:border,left:noBorder,right:noBorder}}))
+    cells.push(new TableCell({children:content.length?content:[paragraph([],AlignmentType.CENTER)],width:{size:i===1?36:32,type:WidthType.PERCENTAGE},borders:{top:noBorder,bottom:border,left:noBorder,right:noBorder}}))
   }
   return new Table({rows:[new TableRow({children:cells,cantSplit:true})],width:{size:100,type:WidthType.PERCENTAGE},visuallyRightToLeft:true})
 }

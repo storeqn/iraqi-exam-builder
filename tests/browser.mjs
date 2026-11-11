@@ -31,6 +31,9 @@ try {
   assert.equal(await page.locator('.print-root .sheet-center strong').first().textContent(),'امتحان الرياضيات')
   await page.getByLabel('المادة',{exact:true}).fill('الرياضيات')
   await page.getByLabel('اسم المدرسة',{exact:true}).fill('مدرسة القرنة')
+  const headerAlignment=columns=>columns.map(column=>getComputedStyle(column).textAlign)
+  assert.deepEqual(await page.locator('.preview-viewport .sheet-header > div').evaluateAll(headerAlignment),['center','center','center'])
+  assert.deepEqual(await page.locator('.print-root [data-sheet]:first-of-type .sheet-header > div').evaluateAll(headerAlignment),['center','center','center'])
   await page.locator('summary').filter({hasText:'تفاصيل إضافية'}).click()
   await page.getByLabel('الدرجة الكلية').fill('40')
   await button('الانتقال إلى الأسئلة').click()
@@ -107,6 +110,13 @@ try {
   const word=await JSZip.loadAsync(exported.docx)
   const xml=await word.file('word/document.xml').async('string')
   assert.ok(xml.includes('w:bidi')&&xml.includes('احسب')&&xml.includes('w:tbl')&&xml.includes('<m:oMath>')&&xml.includes('<m:f>'))
+  const headerRow=xml.match(/<w:tr>.*?<\/w:tr>/s)?.[0]??''
+  const headerCells=headerRow.match(/<w:tc>.*?<\/w:tc>/gs)??[]
+  assert.equal(headerCells.length,3)
+  for(const cell of headerCells){
+    const alignments=[...cell.matchAll(/<w:jc w:val="([^"]+)"\/>/g)].map(match=>match[1])
+    assert.ok(alignments.length>0&&alignments.every(value=>value==='center'))
+  }
   assert.ok(Object.keys(word.files).filter(path=>path.endsWith('.png')).length>=2)
 
   const printed=await page.pdf({preferCSSPageSize:true,printBackground:true})
