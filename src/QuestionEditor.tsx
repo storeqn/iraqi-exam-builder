@@ -1,14 +1,24 @@
 import { lazy, Suspense, useState } from 'react'
-import { ArrowDown, ArrowUp, BookmarkPlus, ChevronDown, Copy, GripVertical, MoreHorizontal, Plus, Shapes, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Bold, BookmarkPlus, ChevronDown, Copy, GripVertical, MoreHorizontal, Plus, Shapes, Trash2 } from 'lucide-react'
 import { RichEditor } from './RichEditor'
 import { diagramSvg } from './diagram'
-import { types, uid, type Diagram, type Question } from './model'
+import { blankPaper, questionFontSizes, types, uid, type Diagram, type Question, type Typography } from './model'
 import { readImage } from './storage'
 import { Button, Field, FilePicker, IconButton, Modal, Select, errorText } from './ui'
 const GeometryEditor=lazy(()=>import('./GeometryEditor'))
-export function QuestionEditor({question, index, count, change, remove, duplicate, reorder, bank, notify, initiallyOpen=true, inputId}: {
+function TextFormat({label, value, change, defaultSize}: {label:string;value?:Typography;change:(value:Typography)=>void;defaultSize:number}) {
+  return <div className="text-format" role="group" aria-label={label}>
+    <Select label={`حجم خط ${label}`} value={String(value?.size??'')} options={[[ '', `افتراضي (${defaultSize})`],...questionFontSizes.map(size=>String(size))]}
+      change={size=>change({...value,size:size?Number(size) as Typography['size']:undefined})}/>
+    <Button className="font-weight-button" kind={value?.bold?'primary':'secondary'} aria-pressed={value?.bold??false}
+      aria-label={`خط عريض: ${label}`} onClick={()=>change({...value,bold:!value?.bold})}><Bold size={16}/>خط عريض</Button>
+  </div>
+}
+const editorTextStyle=(value:Typography|undefined, defaultSize:number)=>({fontSize:value?.size??defaultSize,fontWeight:value?.bold?700:undefined})
+
+export function QuestionEditor({question, index, count, change, remove, duplicate, reorder, bank, notify, initiallyOpen=true, inputId, paperSize=blankPaper.size}: {
   question:Question;index:number;count:number;change:(question:Question)=>void;remove?:()=>void;duplicate?:()=>void;
-  reorder?:(from:number,to:number)=>void;bank?:()=>void;notify:(message:string)=>void;initiallyOpen?:boolean;inputId?:string
+  reorder?:(from:number,to:number)=>void;bank?:()=>void;notify:(message:string)=>void;initiallyOpen?:boolean;inputId?:string;paperSize?:number
 }) {
   const [expanded,setExpanded]=useState(initiallyOpen)
   const [drawing,setDrawing]=useState<number|null>(null)
@@ -35,19 +45,28 @@ export function QuestionEditor({question, index, count, change, remove, duplicat
       </details>}
     </div>
     {expanded&&<div className="question-body">
-      <RichEditor inputId={inputId} label="نص السؤال" placeholder="اكتب السؤال هنا… مثال: عرّف الكسور المتكافئة." value={question.content} change={value=>update('content',value)}/>
+      <RichEditor inputId={inputId} label="نص السؤال" textStyle={editorTextStyle(question.typography,paperSize)} placeholder="اكتب السؤال هنا… مثال: عرّف الكسور المتكافئة." value={question.content} change={value=>update('content',value)}/>
+      <TextFormat label="السؤال" value={question.typography} change={value=>update('typography',value)} defaultSize={paperSize}/>
       <div className="form-grid">
         <Field label="درجة السؤال" type="number" min="0" max="10000" step="0.001" value={question.marks} onChange={event=>update('marks',Math.max(0,Math.min(10000,+event.target.value)))}/>
         <Select label="نوع السؤال" value={question.type} options={types} change={value=>update('type',value as Question['type'])}/>
       </div>
-      {options&&<div className="options">
-        {question.options.map((option,i)=><div className="option-row" key={option.id}><Field label={paired?`العمود الأول ${i+1}`:`الخيار ${i+1}`} maxLength={350} value={option.left} onChange={event=>update('options',question.options.map(item=>item.id===option.id?{...item,left:event.target.value}:item))}/>
-          {paired&&<Field label={`العمود الثاني ${i+1}`} maxLength={350} value={option.right} onChange={event=>update('options',question.options.map(item=>item.id===option.id?{...item,right:event.target.value}:item))}/>}
+      {options&&<div className="options question-option-settings">
+        <strong>{paired?'نص العمودين':'خيارات الإجابة'}</strong>
+        <TextFormat label="الخيارات" value={question.optionsTypography} change={value=>update('optionsTypography',value)} defaultSize={paperSize}/>
+        {question.options.map((option,i)=><div className="option-row" key={option.id}><Field label={paired?`العمود الأول ${i+1}`:`الخيار ${i+1}`} style={editorTextStyle(question.optionsTypography,paperSize)} maxLength={350} value={option.left} onChange={event=>update('options',question.options.map(item=>item.id===option.id?{...item,left:event.target.value}:item))}/>
+          {paired&&<Field label={`العمود الثاني ${i+1}`} style={editorTextStyle(question.optionsTypography,paperSize)} maxLength={350} value={option.right} onChange={event=>update('options',question.options.map(item=>item.id===option.id?{...item,right:event.target.value}:item))}/>}
           <IconButton label="إزالة الخيار" onClick={()=>update('options',question.options.filter(item=>item.id!==option.id))}><Trash2 size={16}/></IconButton></div>)}
         <Button disabled={question.options.length>=80} onClick={()=>update('options',[...question.options,{id:uid(),left:'',right:''}])}><Plus size={16}/>{paired?'إضافة صف':'إضافة خيار'}</Button>
         {question.type==='صح أو خطأ'&&!question.options.length&&<Button onClick={()=>update('options',['صح','خطأ'].map(left=>({id:uid(),left,right:''})))}>إضافة صح وخطأ</Button>}
       </div>}
-      {question.parts.map((part,i)=><div className="subquestion" key={part.id}><div className="section-line"><strong>الفرع {i+1}</strong><IconButton label="حذف الفرع" onClick={()=>{if(confirm('حذف هذا الفرع؟'))update('parts',question.parts.filter(item=>item.id!==part.id))}}><Trash2 size={16}/></IconButton></div><RichEditor label={`نص الفرع ${i+1}`} placeholder="اكتب نص الفرع هنا…" value={part.content} change={value=>update('parts',question.parts.map(item=>item.id===part.id?{...item,content:value}:item))}/></div>)}
+      {question.parts.map((part,i)=><div className="subquestion" key={part.id}>
+        <div className="section-line"><strong>الفرع {i+1}</strong><IconButton label="حذف الفرع" onClick={()=>{if(confirm('حذف هذا الفرع؟'))update('parts',question.parts.filter(item=>item.id!==part.id))}}><Trash2 size={16}/></IconButton></div>
+        <RichEditor label={`نص الفرع ${i+1}`} placeholder="اكتب نص الفرع هنا…" value={part.content} textStyle={editorTextStyle(part.typography,paperSize)}
+          change={content=>update('parts',question.parts.map(item=>item.id===part.id?{...item,content}:item))}/>
+        <TextFormat label={`الفرع ${i+1}`} value={part.typography} defaultSize={paperSize}
+          change={typography=>update('parts',question.parts.map(item=>item.id===part.id?{...item,typography}:item))}/>
+      </div>)}
       <div className="button-row question-extras">
         <Button disabled={question.parts.length>=100} onClick={()=>update('parts',[...question.parts,{id:uid(),content:''}])}><Plus size={16}/>إضافة فرع للسؤال</Button>
         <FilePicker label="إضافة صورة" accept="image/png,image/jpeg,image/webp" disabled={question.images.length>=12} pick={file=>void readImage(file).then(image=>update('images',[...question.images,image])).catch(error=>notify(errorText(error)))}/>

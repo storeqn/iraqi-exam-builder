@@ -230,6 +230,11 @@ input[type="checkbox"] {width:17px;height:17px;accent-color:var(--blue);flex-shr
 .question-index {display:grid;place-items:center;background:var(--blue-soft);color:var(--ink);min-width:28px;min-height:27px;padding:2px 4px;border-radius:6px}
 .question-body {padding:10px}
 .question-extras {margin:7px 0 0}
+.text-format {display:flex;align-items:end;gap:8px;flex-wrap:wrap;margin:3px 0 8px}
+.text-format .field {flex:1;min-width:min(135px,100%);margin:0}
+.text-format .font-weight-button {min-height:44px;white-space:nowrap}
+.question-option-settings {padding:9px;margin:5px 0 10px;border:1px solid var(--line);border-radius:8px}
+.question-option-settings>strong {display:block;margin-bottom:4px}
 .questions-stack,.bank-list {display:grid;gap:8px}
 .marks-line {margin:4px 0;color:var(--muted)}
 .rich-label {font-weight:800;margin:1px 0 5px;cursor:text}

@@ -11,6 +11,12 @@ const noBorder={style:BorderStyle.NONE,size:0}
 function paragraph(children:Run[], alignment:typeof AlignmentType[keyof typeof AlignmentType]=AlignmentType.RIGHT) {
   return new Paragraph({children,bidirectional:true,alignment,spacing:{after:70}})
 }
+function blockTypography(block:HTMLElement):IRunOptions {
+  const size=Number.parseFloat(block.style.fontSize)
+  const halfPoints=Number.isFinite(size)?Math.round(size*1.5):undefined
+  const bold=block.style.fontWeight==='700'
+  return {size:halfPoints,sizeComplexScript:halfPoints,bold:bold||undefined,boldComplexScript:bold||undefined}
+}
 function imageElement(src:string) {
   return new Promise<HTMLImageElement>((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(new Error('تعذّر تضمين صورة في مستند Word.'));image.src=src})
 }
@@ -48,39 +54,40 @@ async function runs(nodes:Iterable<Node>, options:IRunOptions={}):Promise<Run[]>
       if(node.dataset.equation!==undefined){result.push(nativeEquation(node.dataset.equation)??await asPicture(node,420,170));continue}
       if(node.tagName==='BR'){result.push(new TextRun({break:1}));continue}
       const tag=node.tagName
+      const bold=options.bold||['B','STRONG','TH'].includes(tag)
       result.push(...await runs(node.childNodes,{
-        ...options,bold:options.bold||['B','STRONG','TH'].includes(tag),italics:options.italics||['I','EM'].includes(tag),
+        ...options,bold,boldComplexScript:bold,italics:options.italics||['I','EM'].includes(tag),
         underline:tag==='U'?{}:options.underline,
       }))
     }
   }
   return result
 }
-async function tableFor(table:HTMLTableElement):Promise<Table> {
+async function tableFor(table:HTMLTableElement, typography:IRunOptions):Promise<Table> {
   const rows:TableRow[]=[]
   for(const row of table.rows) {
     const cells:TableCell[]=[]
     for(const cell of row.cells) cells.push(new TableCell({
-      children:await richBlocks(cell),columnSpan:cell.colSpan,
+      children:await richBlocks(cell,typography),columnSpan:cell.colSpan,
       ...(cell.tagName==='TH'?{shading:{type:ShadingType.CLEAR,fill:'EDEFF2'}}:{}),
     }))
     if(cells.length)rows.push(new TableRow({children:cells,cantSplit:true}))
   }
   return new Table({rows,width:{size:100,type:WidthType.PERCENTAGE},visuallyRightToLeft:true})
 }
-async function richBlocks(element:HTMLElement):Promise<Block[]> {
+async function richBlocks(element:HTMLElement, typography:IRunOptions):Promise<Block[]> {
   const blocks:Block[]=[]
   let pending:Run[]=[]
   const flush=()=>{if(pending.length){blocks.push(paragraph(pending));pending=[]}}
   for(const node of element.childNodes) {
-    if(node instanceof HTMLTableElement){flush();if(node.rows.length)blocks.push(await tableFor(node));continue}
+    if(node instanceof HTMLTableElement){flush();if(node.rows.length)blocks.push(await tableFor(node,typography));continue}
     if(node instanceof HTMLElement && ['DIV','P','UL','OL'].includes(node.tagName)) {
       flush()
       if(node.matches('ul,ol')){
-        for(const [index,li] of Array.from(node.children).entries())blocks.push(paragraph([new TextRun({text:node.tagName==='UL'?'• ':String(index+1)+'. '}),...await runs(li.childNodes)]))
-      } else if(node.querySelector('table,ul,ol'))blocks.push(...await richBlocks(node))
-      else blocks.push(paragraph(await runs(node.childNodes)))
-    } else pending.push(...await runs([node]))
+        for(const [index,li] of Array.from(node.children).entries())blocks.push(paragraph([new TextRun({...typography,text:node.tagName==='UL'?'• ':String(index+1)+'. '}),...await runs(li.childNodes,typography)]))
+      } else if(node.querySelector('table,ul,ol'))blocks.push(...await richBlocks(node,typography))
+      else blocks.push(paragraph(await runs(node.childNodes,typography)))
+    } else pending.push(...await runs([node],typography))
   }
   flush()
   return blocks.length?blocks:[paragraph([])]
@@ -108,16 +115,21 @@ export async function makeWord(sheets:HTMLElement[],exam:Exam) {
     const entries=Array.from(sheet.querySelectorAll<HTMLElement>('.sheet-block'))
     for(let i=0;i<entries.length;i++){
       const block=entries[i]
+      const typography=blockTypography(block)
       const label=block.querySelector<HTMLElement>('.sheet-label')
-      if(label)content.push(paragraph([new TextRun({text:label.innerText.replace(/\n/g,'   '),bold:true,rightToLeft:true})]))
+      if(label)content.push(paragraph([new TextRun({...typography,text:label.innerText.replace(/\n/g,'   '),bold:true,boldComplexScript:true,rightToLeft:true})]))
       const rich=block.querySelector<HTMLElement>('.sheet-rich')
-      if(rich)content.push(...await richBlocks(rich))
+      if(rich)content.push(...await richBlocks(rich,typography))
       const pair=block.querySelector('.sheet-pair')
       if(pair) {
         const rows:TableRow[]=[]
         let current:Element|null=pair
         while(current) {
-          rows.push(new TableRow({children:Array.from(current.children).map(cell=>new TableCell({children:[paragraph([new TextRun({text:cell.textContent??'',rightToLeft:true})])],width:{size:50,type:WidthType.PERCENTAGE}})),cantSplit:true}))
+          const pairStyle=blockTypography(entries[i])
+          const cells=await Promise.all(Array.from(current.children).map(async cell=>new TableCell({
+            children:[paragraph(await runs(cell.childNodes,pairStyle))],width:{size:50,type:WidthType.PERCENTAGE},
+          })))
+          rows.push(new TableRow({children:cells,cantSplit:true}))
           current=entries[i+1]?.querySelector('.sheet-pair')??null
           if(current)i++
         }

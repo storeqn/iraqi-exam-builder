@@ -1,11 +1,11 @@
-import { lazy, Suspense, useEffect, useId, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useId, useRef, useState, type CSSProperties } from 'react'
 import { flushSync } from 'react-dom'
 import { Bold, Italic, Underline, List, ListOrdered, Table, Sigma } from 'lucide-react'
 import { Button, IconButton, Modal } from './ui'
 import { captureRich, equationMarkup, richHtml } from './rich'
 
 const MathEditor = lazy(()=>import('./MathEditor'))
-export function RichEditor({value, change, label, placeholder, inputId}: {value:string;change:(value:string)=>void;label:string;placeholder?:string;inputId?:string}) {
+export function RichEditor({value, change, label, placeholder, inputId, textStyle}: {value:string;change:(value:string)=>void;label:string;placeholder?:string;inputId?:string;textStyle?:CSSProperties}) {
   const labelId=useId()
   const ref=useRef<HTMLDivElement>(null)
   const seen=useRef<string | undefined>(undefined)
@@ -61,7 +61,7 @@ export function RichEditor({value, change, label, placeholder, inputId}: {value:
   return <div className="rich-field">
     <div id={labelId} className="rich-label" onClick={()=>ref.current?.focus()}>{label}</div>
     <div className="rich">
-      <div ref={ref} id={inputId} className="editable" contentEditable suppressContentEditableWarning role="textbox" aria-labelledby={labelId} aria-multiline="true" dir="rtl" data-placeholder={placeholder??label} onInput={update}
+      <div ref={ref} id={inputId} className="editable" style={textStyle} contentEditable suppressContentEditableWarning role="textbox" aria-labelledby={labelId} aria-multiline="true" dir="rtl" data-placeholder={placeholder??label} onInput={update}
         onPaste={event=>{event.preventDefault();remember();command('insertText',event.clipboardData.getData('text/plain'))}}
         onDrop={event=>event.preventDefault()}
         onClick={event=>{const target=(event.target as HTMLElement).closest<HTMLElement>('span[data-equation]');if(target)openEquation(target)}}/>

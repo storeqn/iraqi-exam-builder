@@ -1,11 +1,11 @@
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { ChevronLeft, ChevronRight, Maximize, Minus, Plus } from 'lucide-react'
 import { DiagramSvg } from './diagram'
-import { dimensions, partNumber, printedExamTitle, questionNumber, type Exam, type Question } from './model'
+import { dimensions, partNumber, printedExamTitle, questionNumber, type Exam, type Question, type Typography } from './model'
 import { richHtml } from './rich'
 import { IconButton } from './ui'
 
-export interface PaperBlock { id:string; group:string; label?:string; marks?:number; rich?:string; labelKind?:'question'|'part'; node?:ReactNode }
+export interface PaperBlock { id:string; group:string; label?:string; marks?:number; rich?:string; labelKind?:'question'|'part'; node?:ReactNode; typography?:Typography }
 type Pages = PaperBlock[][]
 export const millimeters = (value:number) => value*96/25.4
 export function paperStyle(exam:Exam): CSSProperties {
@@ -45,12 +45,12 @@ export function blocksFor(exam:Exam):PaperBlock[] {
   exam.questions.forEach((q,i)=>{
     const group=q.id
     const block=(id:string, properties:Omit<PaperBlock,'id'|'group'>)=>blocks.push({id:group+'-'+id,group,...properties})
-    block('body',{label:questionNumber(i,paper.numbering),labelKind:'question',marks:q.marks,rich:richHtml(q.content)})
+    block('body',{label:questionNumber(i,paper.numbering),labelKind:'question',marks:q.marks,typography:q.typography,rich:richHtml(q.content)})
     if(optionTypes.has(q.type)&&q.options.length){
-      if(pairedQuestion(q)) q.options.forEach((option,index)=>block('pair'+index,{node:<div className="sheet-pair"><div>{option.left}</div><div>{option.right}</div></div>}))
-      else q.options.forEach((option,index)=>block('option'+index,{label:partNumber(index,paper.parts)+')',labelKind:'part',rich:richHtml(option.left.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'))}))
+      if(pairedQuestion(q)) q.options.forEach((option,index)=>block('pair'+index,{typography:q.optionsTypography,node:<div className="sheet-pair"><div>{option.left}</div><div>{option.right}</div></div>}))
+      else q.options.forEach((option,index)=>block('option'+index,{label:partNumber(index,paper.parts)+')',labelKind:'part',typography:q.optionsTypography,rich:richHtml(option.left.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'))}))
     }
-    q.parts.forEach((part,index)=>block(part.id,{label:partNumber(index,paper.parts)+')',labelKind:'part',rich:richHtml(part.content)}))
+    q.parts.forEach((part,index)=>block(part.id,{label:partNumber(index,paper.parts)+')',labelKind:'part',typography:part.typography,rich:richHtml(part.content)}))
     q.images.forEach((image,index)=>block('image'+index,{node:<img className="sheet-attachment" src={image} alt={`صورة السؤال ${i+1}`}/>}))
     q.diagrams.forEach((diagram,index)=>block('diagram'+index,{node:<div className="sheet-diagram"><DiagramSvg shapes={diagram}/></div>}))
   })
@@ -58,7 +58,7 @@ export function blocksFor(exam:Exam):PaperBlock[] {
   return blocks
 }
 function Block({block}: {block:PaperBlock}) {
-  return <div className={`sheet-block ${block.labelKind??''}`}>
+  return <div className={`sheet-block ${block.labelKind??''}`} style={{fontSize:block.typography?.size,fontWeight:block.typography?.bold?700:undefined}}>
     {block.label&&<div className="sheet-label"><strong>{block.label}</strong>{!!block.marks&&<small>{block.marks} درجة</small>}</div>}
     {block.rich!==undefined&&<div className="sheet-rich" dir="rtl" dangerouslySetInnerHTML={{__html:block.rich}}/>}
     {block.node}

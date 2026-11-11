@@ -64,12 +64,28 @@ try {
   await button('إضافة شكل').click()
   await page.getByLabel('اسم الشكل').fill('ABC')
   await button('إدراج الرسم').click()
+  await page.getByLabel('حجم خط السؤال',{exact:true}).selectOption('28')
+  await button('خط عريض: السؤال').click()
+  await page.getByLabel('نوع السؤال').selectOption('اختيار من متعدد')
+  await button('إضافة خيار').click()
+  await page.getByLabel('الخيار 1').fill('الخيار الأول')
+  await page.getByLabel('حجم خط الخيارات').selectOption('18')
+  await button('خط عريض: الخيارات').click()
   await button('إضافة فرع للسؤال').click()
-  await page.getByRole('textbox',{name:'نص الفرع 1'}).fill(('سطر طويل باللغة العربية مع English وx=4. ').repeat(550))
+  await page.getByRole('textbox',{name:'نص الفرع 1'}).fill('عرّف العدد الزوجي.')
+  await page.getByLabel('حجم خط الفرع 1').selectOption('24')
+  await button('خط عريض: الفرع 1').click()
+  await button('إضافة فرع للسؤال').click()
+  await page.getByRole('textbox',{name:'نص الفرع 2'}).fill(('سطر طويل باللغة العربية مع English وx=4. ').repeat(550))
   await page.waitForFunction(()=>document.querySelectorAll('.print-root [data-sheet]').length>=2)
   const count=await page.locator('.print-root [data-sheet]').count()
   assert.ok((await page.locator('.print-root [data-sheet]').first().innerText()).includes('سطر طويل'))
   assert.ok(count>=2)
+  for(const [value,size] of [['احسب القيمة',28],['الخيار الأول',18],['عرّف العدد الزوجي.',24]]){
+    const text=page.locator('.print-root .sheet-rich').filter({hasText:value}).first()
+    assert.equal(await text.evaluate(element=>getComputedStyle(element).fontSize),size+'px')
+    assert.equal(await text.evaluate(element=>getComputedStyle(element).fontWeight),'700')
+  }
   await button('حفظ').click()
   await page.getByText('تم الحفظ',{exact:true}).waitFor()
   if(process.env.TEST_OUTPUT){await mkdir(process.env.TEST_OUTPUT,{recursive:true});await page.screenshot({path:process.env.TEST_OUTPUT+'/editor.png'})}
@@ -79,6 +95,10 @@ try {
   await page.locator('.editable [data-equation]').first().waitFor()
   assert.equal(await page.locator('.editable table').count(),1)
   assert.equal(await page.getByAltText('الرسم الهندسي 1').count(),1)
+  assert.equal(await page.getByLabel('حجم خط السؤال',{exact:true}).inputValue(),'28')
+  assert.equal(await page.getByLabel('حجم خط الفرع 1').inputValue(),'24')
+  assert.equal(await page.getByLabel('حجم خط الخيارات').inputValue(),'18')
+  assert.equal(await button('خط عريض: الفرع 1').getAttribute('aria-pressed'),'true')
   await page.locator('.question-actions summary').click()
   await button('حفظ في بنك الأسئلة').click()
   await page.getByLabel('الفصل أو الوحدة').fill('الجبر')
@@ -110,6 +130,11 @@ try {
   const word=await JSZip.loadAsync(exported.docx)
   const xml=await word.file('word/document.xml').async('string')
   assert.ok(xml.includes('w:bidi')&&xml.includes('احسب')&&xml.includes('w:tbl')&&xml.includes('<m:oMath>')&&xml.includes('<m:f>'))
+  const wordRuns=xml.match(/<w:r>.*?<\/w:r>/gs)??[]
+  for(const [value,size] of [['احسب',42],['الخيار',27],['عرّف',36]]){
+    const run=wordRuns.find(item=>item.includes(value))
+    assert.ok(run?.includes(`<w:szCs w:val="${size}"/>`)&&run.includes('<w:bCs/>'),value)
+  }
   const headerRow=xml.match(/<w:tr>.*?<\/w:tr>/s)?.[0]??''
   const headerCells=headerRow.match(/<w:tc>.*?<\/w:tc>/gs)??[]
   assert.equal(headerCells.length,3)

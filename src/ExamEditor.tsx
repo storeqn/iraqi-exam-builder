@@ -119,7 +119,7 @@ export function ExamEditor({initial,data,view,initialDialog,save,saveBank,savePr
             <div className="section-line"><h2 id="exam-questions-title">أسئلة الامتحان</h2><span className="marks-line">مجموع الدرجات <bdi>{marks}</bdi>{exam.info.total!==null&&<> / <bdi>{exam.info.total}</bdi></>}</span></div>
             {exam.info.total!==null&&marks!==exam.info.total&&<p className="warning" role="status"><CircleAlert size={17}/> مجموع درجات الأسئلة يختلف عن الدرجة الكلية.</p>}
             {!exam.questions.length&&<div className="question-start"><strong>أضف أول سؤال لبدء الكتابة</strong><p>سيظهر حقل نص السؤال وتجد تحته خيارات الدرجة والنوع.</p></div>}
-            <div className="questions-stack">{exam.questions.map((question,index)=><QuestionEditor key={question.id} inputId={'question-text-'+question.id} question={question} index={index} count={exam.questions.length} change={next=>updateQuestion(question.id,next)} notify={notify}
+            <div className="questions-stack">{exam.questions.map((question,index)=><QuestionEditor key={question.id} inputId={'question-text-'+question.id} question={question} index={index} count={exam.questions.length} paperSize={exam.paper.size} change={next=>updateQuestion(question.id,next)} notify={notify}
               reorder={(from,to)=>update(old=>({...old,questions:move(old.questions,from,to)}))}
               remove={()=>{if(confirm('حذف هذا السؤال من الورقة؟'))update(old=>({...old,questions:old.questions.filter(item=>item.id!==question.id)}))}}
               duplicate={exam.questions.length<250?()=>update(old=>({...old,questions:[...old.questions.slice(0,index+1),{...structuredClone(question),id:uid()},...old.questions.slice(index+1)]})):undefined}

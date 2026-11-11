@@ -14,7 +14,7 @@ export function Field({ label, ...props }: InputHTMLAttributes<HTMLInputElement>
   return <label className="field"><span>{label}</span><input {...props}/></label>
 }
 export function Select({ label, value, options, change }: {label: string; value: string; options: readonly (string | readonly [string,string])[]; change: (value: string)=>void}) {
-  return <label className="field"><span>{label}</span><select value={value} onChange={event=>change(event.target.value)}>{options.map(option=>typeof option==='string' ? <option key={option}>{option}</option> : <option key={option[0]} value={option[0]}>{option[1]}</option>)}</select></label>
+  return <label className="field"><span>{label}</span><select aria-label={label} value={value} onChange={event=>change(event.target.value)}>{options.map(option=>typeof option==='string' ? <option key={option}>{option}</option> : <option key={option[0]} value={option[0]}>{option[1]}</option>)}</select></label>
 }
 export function Toggle({label, checked, change}: {label:string; checked:boolean; change:(value:boolean)=>void}) {
   return <label className="toggle"><input type="checkbox" checked={checked} onChange={event=>change(event.target.checked)}/>{label}</label>

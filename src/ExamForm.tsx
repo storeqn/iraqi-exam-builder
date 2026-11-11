@@ -52,7 +52,7 @@ export function PaperControls({paper, change}: {paper:Paper;change:(paper:Paper)
       <Select label="اتجاه الورقة" value={paper.orientation} options={[[ 'portrait','عمودي'],['landscape','أفقي']]} change={value=>update('orientation',value as Paper['orientation'])}/>
       <Select label="خط الورقة" value={paper.font} options={[[ 'Amiri','أميري'],['Cairo','القاهرة']]} change={value=>update('font',value as Paper['font'])}/>
       <Field label="الهوامش (مم)" type="number" min="8" max="28" value={paper.margin} onChange={event=>update('margin',Math.max(8,Math.min(28,+event.target.value)))}/>
-      <Field label="حجم خط السؤال" type="number" min="12" max="30" value={paper.size} onChange={event=>update('size',Math.max(12,Math.min(30,+event.target.value)))}/>
+      <Field label="حجم خط الأسئلة الافتراضي" type="number" min="12" max="30" value={paper.size} onChange={event=>update('size',Math.max(12,Math.min(30,+event.target.value)))}/>
       <Field label="تباعد السطور" type="number" min="1.15" max="2.2" step="0.05" value={paper.spacing} onChange={event=>update('spacing',Math.max(1.15,Math.min(2.2,+event.target.value)))}/>
       <Select label="ترقيم الأسئلة" value={paper.numbering} options={[[ 'arabic','س1، س2'],['numeric','1، 2']]} change={value=>update('numbering',value as Paper['numbering'])}/>
       <Select label="ترقيم الفروع" value={paper.parts} options={[[ 'letters','أ، ب، ج'],['numbers','1، 2، 3']]} change={value=>update('parts',value as Paper['parts'])}/>

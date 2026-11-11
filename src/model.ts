@@ -18,9 +18,13 @@ export const diagramSchema = z.array(shape).max(60)
 function unique<T extends {id:string}>(items:T[]) {
   return new Set(items.map(item=>item.id)).size===items.length
 }
+export const questionFontSizes = [12,14,16,18,20,22,24,26,28,30,32,36,40] as const
+const typographySchema = z.object({ size:z.literal(questionFontSizes).optional(), bold:z.boolean().optional() })
+export type Typography = z.infer<typeof typographySchema>
 export const questionSchema = z.object({
   id: z.uuid(), type: z.enum(types), content: text, marks: z.number().min(0).max(10000),
-  parts: z.array(z.object({ id: z.uuid(), content: text })).max(100),
+  typography: typographySchema.optional(), optionsTypography: typographySchema.optional(),
+  parts: z.array(z.object({ id: z.uuid(), content: text, typography: typographySchema.optional() })).max(100),
   options: z.array(z.object({ id: z.uuid(), left: small, right: small })).max(80),
   images: z.array(image).max(12), diagrams: z.array(diagramSchema).max(12),
 }).refine(question=>unique(question.parts)&&unique(question.options)&&question.diagrams.every(unique),'معرّفات السؤال مكررة')
